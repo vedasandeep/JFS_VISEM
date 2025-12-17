@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Batch-wise Timetable</title>
+    <title>Faculty-wise Timetable</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
     <style>
@@ -18,10 +18,13 @@
         th {
             background: lightblue;
         }
-        .batch-title {
+        .faculty-title {
             font-weight: bold;
             font-size: 20px;
             margin-top: 30px;
+        }
+        .su2{
+            color:rgb(179, 109, 31);
         }
     </style>
 </head>
@@ -29,12 +32,18 @@
 
 <h2>Upload CSV File</h2>
 <input type="file" id="csvFile" accept=".csv">
-
+<br>
+<input type="text" name="faculty" id="faculty">
+<button id = "go">Go</button>
 <div id="tables"></div>
 
 <script>
-document.getElementById("csvFile").addEventListener("change", function () {
-    Papa.parse(this.files[0], {
+
+
+
+document.getElementById('go').addEventListener('click', function(){
+    let csv = document.getElementById("csvFile")
+    Papa.parse(csv.files[0], {
         header: true,
         skipEmptyLines: true,
         complete: function (result) {
@@ -47,27 +56,35 @@ function processCSV(data) {
     const timetable = {};
 
     data.forEach(row => {
-        const batch = row["BATCH"];
+        const faculty = row["FACULTY"];
         const day = row["DAY"];
-        const session = row["SESSION"];  // FN / AN
+        const session = row["SESSION"]; // FN / AN
         const course = row["COURSE"];
         const room = row["ROOM"];
-		const faculty = row["FACULTY"];
+        const batch = row["BATCH"];
+        const name = row["NAME"];
 
-        if (!batch || !day || !session) return;
+        faculty[faculty] = name;
 
-        if (!timetable[batch]) {
-            timetable[batch] = {};
+        if (!faculty || !day || !session) return;
+
+        if (!timetable[faculty]) {
+            timetable[faculty] = {};
         }
-        if (!timetable[batch][day]) {
-            timetable[batch][day] = { FN: "", AN: "" };
+        if (!timetable[faculty][day]) {
+            timetable[faculty][day] = { FN: "", AN: "" };
         }
 
-        // store course + room
-        timetable[batch][day][session] = `${course}<br>Room: ${room}<br>Faculty:${faculty}`;
+        if(batch.includes("SU-B2") ){
+            timetable[faculty][day][session] =
+            `<span style="color:orange"> ${course}<br>Batch: ${batch}<br>Room: ${room}</span>`;
+        }
+        else{
+        timetable[faculty][day][session] =
+            `${course}<br>Batch: ${batch}<br>Room: ${room}`;
+            }
     });
-    console.log(timetable);
-
+    console.log(timetable)
     buildTables(timetable);
 }
 
@@ -76,34 +93,44 @@ function buildTables(timetable) {
     container.innerHTML = "";
 
     const days = ["MON", "TUE", "WED", "THU", "FRI", "SAT"];
-
-    for (const batch in timetable) {
-
-        // Wrapper div for each table + button
+    let check = true;
+    for (const faculty in timetable) {
+        if(document.getElementById("faculty").value === ""){
+            check = false;
+        }
+        if(faculty !== document.getElementById("faculty").value && check == true){
+            continue;
+        }
         const wrapper = document.createElement("div");
         wrapper.style.marginBottom = "40px";
 
-        // Title
         const title = document.createElement("div");
-        title.className = "batch-title";
-        title.innerHTML = `Batch: ${batch}`;
-
-        // Print button
+        title.className = "faculty-title";
+        title.innerHTML = `Faculty: ${faculty}`;
+        /*
         const btn = document.createElement("button");
         btn.innerHTML = "Print This Timetable";
         btn.style.marginBottom = "10px";
         btn.onclick = function () {
-            printTable(batch);
+            printTable(faculty);
         };
-
-        // Table
+        */
         const table = document.createElement("table");
-        table.id = `table_${batch}`;
+        table.id = `table_${faculty.replace(/\s+/g, "_")}`;
 
-        let html = "<tr><th>DAY</th><th>FN</th><th rowspan=7>L<br>U<br>N<br>C<br>H</th><th>AN</th></tr>";
+        let html = `
+            <tr>
+                <th>DAY</th>
+                <th>FN</th>
+                <th rowspan="7">L<br>U<br>N<br>C<br>H</th>
+                <th>AN</th>
+            </tr>
+        `;
+
         days.forEach(day => {
-            const fn = timetable[batch][day]?.FN || "";
-            const an = timetable[batch][day]?.AN || "";
+            const fn = timetable[faculty][day]?.FN || "";
+            const an = timetable[faculty][day]?.AN || "";
+            
             html += `
                 <tr>
                     <td>${day}</td>
@@ -115,19 +142,19 @@ function buildTables(timetable) {
 
         table.innerHTML = html;
 
-        // Add everything to wrapper
         wrapper.appendChild(title);
-        wrapper.appendChild(btn);
+        //wrapper.appendChild(btn);
         wrapper.appendChild(table);
-
         container.appendChild(wrapper);
     }
-}
+    
 
-// Print only selected batch table
-function printTable(batch) {
-    const tableHTML = document.getElementById(`table_${batch}`).outerHTML;
-    const title = `<h2>Batch: ${batch}</h2>`;
+}
+/*
+function printTable(faculty) {
+    const tableId = `table_${faculty.replace(/\s+/g, "_")}`;
+    const tableHTML = document.getElementById(tableId).outerHTML;
+    const title = `<h2>Faculty: ${faculty}</h2>`;
 
     const printWindow = window.open("", "", "width=900,height=600");
     printWindow.document.write(`
@@ -151,38 +178,7 @@ function printTable(batch) {
     printWindow.print();
 }
 
-/*
-function buildTables(timetable) 
-{
-    const container = document.getElementById("tables");
-    container.innerHTML = "";
-
-    const days = ["MON", "TUE", "WED", "THU", "FRI", "SAT"];
-
-    for (const batch in timetable) 
-	{
-        const table = document.createElement("table");
-
-        const title = document.createElement("div");
-        title.className = "batch-title";
-        title.innerHTML = `Batch: ${batch}`;
-        container.appendChild(title);
-        let html = "<tr><th>DAY</th><th>FN</th><th rowspan=7>L<br>U<br>N<br>C<br>H</th><th>AN</th></tr>";
-        days.forEach(day => {
-            const fn = timetable[batch][day]?.FN || "";
-            const an = timetable[batch][day]?.AN || "";
-            html += `
-                <tr>
-                    <td>${day}</td>
-                    <td>${fn}</td>
-                    <td>${an}</td>
-                </tr>
-            `;
-        });
-        table.innerHTML = html;
-        container.appendChild(table);
-    }
-}*/
+*/
 </script>
 
 </body>
