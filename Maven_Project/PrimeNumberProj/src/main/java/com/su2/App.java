@@ -1,4 +1,4 @@
-package com.skillnext;
+package com.su2;
 
 import java.util.Scanner;
 
