@@ -8,9 +8,9 @@ public class App
     {
         Scanner sc = new Scanner(System.in);
         System.out.println("Find prime numbers between two numbers");
-        System.out.println("Enter Number1(Start):");
+        System.out.println("Enter Number1:");
         int m = sc.nextInt();
-        System.out.println("Enter Number2(End):");
+        System.out.println("Enter Number2:");
         int n = sc.nextInt();
         boolean[] bool = new boolean[n+1];
         Arrays.fill(bool,true);
